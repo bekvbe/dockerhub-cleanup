@@ -4,20 +4,28 @@
 The **DockerHub Cleanup Script** is a Python-based tool designed to manage and optimize DockerHub storage usage. With DockerHub enforcing a storage limit, this script automates the cleanup of old and unused Docker image tags to ensure compliance while retaining critical assets.
 
 ## Key Features:
-### 1. Safety First:
-- Dry-run mode (--dry-run) previews actions
-- Comprehensive CSV report with decision reasons
+- Dry-run mode (--dry-run) for previewing actions
+- Comprehensive CSV report of decisions
 - Full JSON backup of tag metadata
+- Smart cleanup retaining critical and recent tags
+- Support for selective repository processing (--repos)
+- Handles pagination, rate limiting, and API error handling
 
-### 2. Smart Cleanup:
-- Maintains latest, prod, production tags
-- Keeps 10 most recent tags regardless of name
-- Skips specific repositories, ex: logspout*
+## New Features:
+- Added support for processing only selected repositories using the --repos argument (overrides skip-repos)
+- Combined preservation rules: a tag prefix without a count preserves all matching tags; a tag prefix with a number (e.g., prod:10) preserves only the top n matching tags.
 
-### 3. Enterprise-Ready:
-- Handles Docker Hub pagination
-- Rate limiting (1 request/second)
-- Error handling for API failures
+## Arguments:
+- `--namespace`: Docker Hub namespace/organization.
+- `--token`: Docker Hub PAT with read:write scope.
+- `--dry-run`: Preview changes without deleting.
+- `--backup-file`: Path to JSON backup file (default: dockerhub_backup.json).
+- `--retention-days`: Days to retain tags (default: 90).
+- `--preserve-last`: Global number of newest tags to preserve if no --preserve rules are provided (default: 10).
+- `--skip-repos`: List of repository name prefixes to skip (default: logspout).
+- `--preserve`: Preservation rules in the format prefix:number (e.g., prod:10 staging:5).
+- `--input-json`: Path to JSON file with repository/tag data to use instead of pulling from the API. (great for testing)
+- `--repos`: List of specific repositories to process (ignores --skip-repos).
 
 ## Purpose
 This tool helps organizations reduce excessive DockerHub storage usage caused by outdated and infrequently accessed images. It ensures adherence to DockerHub's storage limits without compromising critical operations.
@@ -45,17 +53,20 @@ Check backup file for completeness
 Test on a non-critical repository first!
 Monitor Docker Hub storage metrics post-cleanup
 
-
 ## Usage
-Generate PAT with read:write privilage here [Docker Settings](https://app.docker.com/settings/personal-access-tokens).
+Generate PAT with read:write privileges at [Docker Settings](https://app.docker.com/settings/personal-access-tokens).
 
-`export DH_TOKEN="your_token"`
+```bash
+export DH_TOKEN="your_token"
+export DH_NAMESPACE="your_organization"
 
-`export DH_NAMESPACE="your_organization" `
-
-```
 python3 dockerhub_cleanup.py \
+  --dry-run \
   --namespace $DH_NAMESPACE \
   --token $DH_TOKEN \
-  --dry-run
-  ```
+  --retention-days 90 \
+  --preserve-last 10 \
+  --preserve prod:10 staging:5 \
+  --repos repo1 repo2
+```
+````

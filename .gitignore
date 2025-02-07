@@ -171,3 +171,4 @@ cython_debug/
 # Ignore script outputs
 *.csv
 *.json
+!*mock.json

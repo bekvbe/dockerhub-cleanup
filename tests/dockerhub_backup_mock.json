@@ -1,0 +1,170 @@
+{
+  "test-repo-1": [
+    {
+      "creator": 16444092,
+      "id": 364683401,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:mock1111111111111111111111111111111111111111111111111111111111",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 42831605,
+          "status": "inactive",
+          "last_pulled": "0001-01-01T00:00:00Z",
+          "last_pushed": "2023-01-10T05:07:18Z"
+        }
+      ],
+      "last_updated": "2023-01-10T05:07:17.952728Z",
+      "last_updater": 16444092,
+      "last_updater_username": "testuser",
+      "name": "pr-001",
+      "repository": 16341131,
+      "full_size": 42831605,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "0001-01-01T00:00:00Z",
+      "tag_last_pushed": "2023-01-10T05:07:17.952728Z",
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "content_type": "image",
+      "digest": "sha256:mock1111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "creator": 16444092,
+      "id": 364683402,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:mock2222222222222222222222222222222222222222222222222222222222",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 42831605,
+          "status": "active",
+          "last_pulled": "2023-06-10T05:07:18Z",
+          "last_pushed": "2023-01-11T05:07:18Z"
+        }
+      ],
+      "last_updated": "2023-01-11T05:07:17.952728Z", 
+      "last_updater": 16444092,
+      "last_updater_username": "testuser",
+      "name": "pr-002",
+      "repository": 16341131,
+      "full_size": 42831605,
+      "v2": true,
+      "tag_status": "active",
+      "tag_last_pulled": "2023-06-10T05:07:18Z",
+      "tag_last_pushed": "2023-01-11T05:07:17.952728Z",
+      "media_type": "application/vnd.docker.container.image.v1+json", 
+      "content_type": "image",
+      "digest": "sha256:mock2222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "test-repo-2": [
+    {
+      "creator": 16444092,
+      "id": 364683403,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:mock3333333333333333333333333333333333333333333333333333333333",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 42831605,
+          "status": "inactive",
+          "last_pulled": "0001-01-01T00:00:00Z",
+          "last_pushed": "2023-01-12T05:07:18Z"
+        }
+      ],
+      "last_updated": "2023-01-12T05:07:17.952728Z",
+      "last_updater": 16444092,
+      "last_updater_username": "testuser",
+      "name": "pr-003",
+      "repository": 16341132,
+      "full_size": 42831605,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "0001-01-01T00:00:00Z",
+      "tag_last_pushed": "2023-01-12T05:07:17.952728Z",
+      "media_type": "application/vnd.docker.distribution.manifest.list.v2+json",
+      "content_type": "image",
+      "digest": "sha256:mock3333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "test-repo-3": [
+    {
+      "creator": 12345678,
+      "id": 987654321,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:mock4444444444444444444444444444444444444444444444444444444444",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 12345678,
+          "status": "active",
+          "last_pulled": "2023-07-10T05:07:18Z",
+          "last_pushed": "2023-02-10T05:07:18Z"
+        }
+      ],
+      "last_updated": "2023-02-10T05:07:17.952728Z",
+      "last_updater": 12345678,
+      "last_updater_username": "mockuser",
+      "name": "pr-003",
+      "repository": 11111111,
+      "full_size": 12345678,
+      "v2": true,
+      "tag_status": "active",
+      "tag_last_pulled": "2023-07-10T05:07:18Z",
+      "tag_last_pushed": "2023-02-10T05:07:17.952728Z",
+      "media_type": "application/vnd.docker.distribution.manifest.v2+json",
+      "content_type": "image",
+      "digest": "sha256:mock4444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "test-repo-4": [
+    {
+      "creator": 87654321,
+      "id": 123456789,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:mock5555555555555555555555555555555555555555555555555555555555",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 87654321,
+          "status": "inactive",
+          "last_pulled": "0001-01-01T00:00:00Z",
+          "last_pushed": "2023-03-10T05:07:18Z"
+        }
+      ],
+      "last_updated": "2023-03-10T05:07:17.952728Z",
+      "last_updater": 87654321,
+      "last_updater_username": "labuser",
+      "name": "pr-lab",
+      "repository": 22222222,
+      "full_size": 87654321,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "0001-01-01T00:00:00Z",
+      "tag_last_pushed": "2023-03-10T05:07:17.952728Z",
+      "media_type": "application/vnd.docker.container.image.v1+json",
+      "content_type": "image",
+      "digest": "sha256:mock5555555555555555555555555555555555555555555555555555555555"
+    }
+  ]
+}
