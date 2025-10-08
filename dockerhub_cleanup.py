@@ -55,7 +55,7 @@ def process_tags(tags, retention_days, global_preserve_last, preserve_rules):
     If preserve_rules is empty, the global_preserve_last value is used.
     Returns a list of tag dictionaries with additional computed fields.
     """
-    pull_cutoff = datetime.utcnow() - timedelta(days=retention_days)
+    retention_cutoff = datetime.utcnow() - timedelta(days=retention_days)
     processed = []
     
     # Parse dates once and build a new collection with computed fields.
@@ -100,8 +100,10 @@ def process_tags(tags, retention_days, global_preserve_last, preserve_rules):
         reasons = []
         if tag["name"] in preserved_reasons:
             reasons.append(preserved_reasons[tag["name"]])
-        if tag["last_pulled_dt"] and tag["last_pulled_dt"] >= pull_cutoff:
+        if tag["last_pulled_dt"] and tag["last_pulled_dt"] >= retention_cutoff:
             reasons.append(f"pulled within retention ({retention_days} days)")
+        if tag["last_updated_dt"] and tag["last_updated_dt"] >= retention_cutoff:
+            reasons.append(f"pushed within retention ({retention_days} days)")
         
         if reasons:
             tag["status"] = "PRESERVED"
@@ -111,7 +113,7 @@ def process_tags(tags, retention_days, global_preserve_last, preserve_rules):
             if not tag["last_pulled_dt"]:
                 deletion_reasons.append("never pulled")
             else:
-                deletion_reasons.append(f"not pulled since {pull_cutoff.isoformat()}")
+                deletion_reasons.append(f"not pulled since {retention_cutoff.isoformat()}")
             tag["status"] = "TO DELETE"
             tag["reason"] = ", ".join(deletion_reasons)
     
