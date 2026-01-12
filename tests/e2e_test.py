@@ -12,7 +12,8 @@ class TestDockerhubCleanupE2E(unittest.TestCase):
             sys.executable,  # Use the same Python interpreter as the test
             script_path,
             "--namespace", "testnamespace",
-            "--token", "dummy",
+            "--username", "testuser",
+            "--pat", "dummy",
             "--dry-run",
             "--input-json", input_json_path,
             "--preserve", "pr-001:1", "pr-002:1"
