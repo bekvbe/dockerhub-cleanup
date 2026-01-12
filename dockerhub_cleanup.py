@@ -204,10 +204,10 @@ def fetch_backup_data(args, auth):
     print(f"Fetching repository list for namespace '{args.namespace}'...")
     try:
         repos_url = f"{DH_API_BASE}/repositories/{args.namespace}/"
-        repos = get_paginated_results(repos_url, auth, description="Fetching repositories")
+        repos = get_paginated_results(repos_url, auth, params={"page_size": 100}, description="Fetching repositories")
     except requests.HTTPError:
         repos_url = f"{DH_API_BASE}/users/{args.namespace}/repositories/"
-        repos = get_paginated_results(repos_url, auth, description="Fetching repositories")
+        repos = get_paginated_results(repos_url, auth, params={"page_size": 100}, description="Fetching repositories")
 
     print(f"Found {len(repos)} repositories")
 
@@ -230,7 +230,7 @@ def fetch_backup_data(args, auth):
         print(f"[{idx}/{total_repos}] Fetching tags for repository '{repo_name}'...")
         tags_url = f"{DH_API_BASE}/repositories/{args.namespace}/{repo_name}/tags/"
         try:
-            tags = get_paginated_results(tags_url, auth, description=f"  Fetching tags from '{repo_name}'")
+            tags = get_paginated_results(tags_url, auth, params={"page_size": 100}, description=f"  Fetching tags from '{repo_name}'")
             print(f"[{idx}/{total_repos}] Fetched {len(tags)} tags from '{repo_name}'")
         except requests.HTTPError as e:
             print(f"[{idx}/{total_repos}] Error fetching tags for {repo_name}: {str(e)}")
