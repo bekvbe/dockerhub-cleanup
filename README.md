@@ -4,6 +4,8 @@
 The **DockerHub Cleanup Script** is a Python-based tool designed to manage and optimize DockerHub storage usage. With DockerHub enforcing a storage limit, this script automates the cleanup of old and unused Docker image tags to ensure compliance while retaining critical assets.
 
 ## Key Features:
+- Automatic authentication with Personal Access Tokens (PAT)
+- Intelligent token refresh - automatically refreshes expired access tokens
 - Dry-run mode (--dry-run) for previewing actions
 - Comprehensive CSV report of decisions
 - Full JSON backup of tag metadata
@@ -17,7 +19,8 @@ The **DockerHub Cleanup Script** is a Python-based tool designed to manage and o
 
 ## Arguments:
 - `--namespace`: Docker Hub namespace/organization.
-- `--token`: Docker Hub PAT with read:write scope.
+- `--username`: Docker Hub username.
+- `--pat`: Docker Hub Personal Access Token with read:write scope.
 - `--dry-run`: Preview changes without deleting.
 - `--backup-file`: Path to JSON backup file (default: dockerhub_backup.json).
 - `--retention-days`: Days to retain tags (default: 90).
@@ -57,16 +60,17 @@ Monitor Docker Hub storage metrics post-cleanup
 Generate PAT with read:write privileges at [Docker Settings](https://app.docker.com/settings/personal-access-tokens).
 
 ```bash
-export DH_TOKEN="your_token"
+export DH_USERNAME="your_username"
+export DH_PAT="your_personal_access_token"
 export DH_NAMESPACE="your_organization"
 
 python3 dockerhub_cleanup.py \
   --dry-run \
   --namespace $DH_NAMESPACE \
-  --token $DH_TOKEN \
+  --username $DH_USERNAME \
+  --pat $DH_PAT \
   --retention-days 90 \
   --preserve-last 10 \
   --preserve prod:10 staging:5 \
   --repos repo1 repo2
 ```
-````

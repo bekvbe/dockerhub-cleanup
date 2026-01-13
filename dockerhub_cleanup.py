@@ -8,6 +8,59 @@ import requests
 # DockerHub API configuration
 DH_API_BASE = "https://hub.docker.com/v2"
 
+class DockerHubAuth:
+    """Handles Docker Hub authentication with automatic token refresh."""
+
+    def __init__(self, username, pat):
+        self.username = username
+        self.pat = pat
+        self.access_token = None
+        self._authenticate()
+
+    def _authenticate(self):
+        """Authenticate with Docker Hub using PAT to get an access token."""
+        print("Authenticating with Docker Hub...")
+        auth_url = f"{DH_API_BASE}/users/login"
+        payload = {
+            "username": self.username,
+            "password": self.pat
+        }
+        try:
+            response = requests.post(auth_url, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            self.access_token = data.get("token")
+            if not self.access_token:
+                raise Exception("No token received from authentication")
+            print("Successfully authenticated")
+        except requests.HTTPError as e:
+            print(f"Authentication failed: {e}")
+            raise
+
+    def get_headers(self):
+        """Get authorization headers with current access token."""
+        return {"Authorization": f"Bearer {self.access_token}"}
+
+    def refresh_token(self):
+        """Refresh the access token."""
+        print("Access token expired, refreshing...")
+        self._authenticate()
+
+    def request(self, method, url, **kwargs):
+        """Make an authenticated request with automatic token refresh on 401."""
+        headers = kwargs.pop("headers", {})
+        headers.update(self.get_headers())
+
+        response = requests.request(method, url, headers=headers, **kwargs)
+
+        # If we get a 401, refresh the token and retry once
+        if response.status_code == 401:
+            self.refresh_token()
+            headers.update(self.get_headers())
+            response = requests.request(method, url, headers=headers, **kwargs)
+
+        return response
+
 def parse_docker_date(date_str):
     """Parse Docker Hub's timestamp format with variable fractional seconds."""
     date_str = date_str.rstrip("Z")
@@ -23,7 +76,8 @@ def parse_docker_date(date_str):
 def parse_args():
     parser = argparse.ArgumentParser(description="Docker Hub Tag Cleanup Script")
     parser.add_argument("--namespace", required=True, help="Docker Hub namespace/organization")
-    parser.add_argument("--token", required=True, help="Docker Hub PAT with read:write scope")
+    parser.add_argument("--username", required=True, help="Docker Hub username")
+    parser.add_argument("--pat", required=True, help="Docker Hub Personal Access Token with read:write scope")
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without deleting")
     parser.add_argument("--backup-file", default="dockerhub_backup.json", help="Backup file path (used when not providing --input-json)")
     parser.add_argument("--retention-days", type=int, default=90, help="Days to retain tags")
@@ -37,14 +91,18 @@ def parse_args():
     parser.add_argument("--repos", nargs="+", help="List of specific repositories to process (ignores skip-repos)")
     return parser.parse_args()
 
-def get_paginated_results(url, headers, params=None):
+def get_paginated_results(url, auth, params=None, description=None):
     results = []
+    page = 0
     while url:
-        response = requests.get(url, headers=headers, params=params)
+        page += 1
+        response = auth.request("GET", url, params=params)
         response.raise_for_status()
         data = response.json()
         results.extend(data["results"])
         url = data.get("next")
+        if description:
+            print(f"{description} - page {page} ({len(results)} items retrieved)")
         time.sleep(1)  # Rate limit protection
     return results
 
@@ -117,7 +175,7 @@ def process_tags(tags, retention_days, global_preserve_last, preserve_rules):
     
     return processed
 
-def process_repository(repo_name, tags, args, preserve_rules, headers, writer):
+def process_repository(repo_name, tags, args, preserve_rules, auth, writer):
     processed_tags = process_tags(tags, args.retention_days, args.preserve_last, preserve_rules)
     for tag in processed_tags:
         writer.writerow([
@@ -134,37 +192,48 @@ def process_repository(repo_name, tags, args, preserve_rules, headers, writer):
             else:
                 delete_url = f"{DH_API_BASE}/repositories/{args.namespace}/{repo_name}/tags/{tag['name']}/"
                 try:
-                    response = requests.delete(delete_url, headers=headers)
+                    response = auth.request("DELETE", delete_url)
                     response.raise_for_status()
                     print(f"Deleted {repo_name}:{tag['name']}")
                     time.sleep(1)
                 except requests.HTTPError as e:
                     print(f"Failed to delete {repo_name}:{tag['name']} - {str(e)}")
 
-def fetch_backup_data(args, headers):
+def fetch_backup_data(args, auth):
     backup_data = {}
+    print(f"Fetching repository list for namespace '{args.namespace}'...")
     try:
         repos_url = f"{DH_API_BASE}/repositories/{args.namespace}/"
-        repos = get_paginated_results(repos_url, headers)
+        repos = get_paginated_results(repos_url, auth, params={"page_size": 100}, description="Fetching repositories")
     except requests.HTTPError:
         repos_url = f"{DH_API_BASE}/users/{args.namespace}/repositories/"
-        repos = get_paginated_results(repos_url, headers)
-    
+        repos = get_paginated_results(repos_url, auth, params={"page_size": 100}, description="Fetching repositories")
+
+    print(f"Found {len(repos)} repositories")
+
+    # Determine which repos will actually be processed for accurate progress counting
+    repos_to_process = []
     for repo_data in repos:
         repo_name = repo_data["name"]
-        # If --repos is provided, process only specified repos; otherwise, use skip-repos filtering.
         if args.repos:
-            if repo_name not in args.repos:
-                continue
+            if repo_name in args.repos:
+                repos_to_process.append(repo_data)
         else:
-            if any(repo_name.startswith(prefix) for prefix in args.skip_repos):
-                print(f"Skipping repository: {repo_name}")
-                continue
+            if not any(repo_name.startswith(prefix) for prefix in args.skip_repos):
+                repos_to_process.append(repo_data)
+
+    total_repos = len(repos_to_process)
+    print(f"Processing {total_repos} repositories (after filtering)")
+
+    for idx, repo_data in enumerate(repos_to_process, 1):
+        repo_name = repo_data["name"]
+        print(f"[{idx}/{total_repos}] Fetching tags for repository '{repo_name}'...")
         tags_url = f"{DH_API_BASE}/repositories/{args.namespace}/{repo_name}/tags/"
         try:
-            tags = get_paginated_results(tags_url, headers)
+            tags = get_paginated_results(tags_url, auth, params={"page_size": 100}, description=f"  Fetching tags from '{repo_name}'")
+            print(f"[{idx}/{total_repos}] Fetched {len(tags)} tags from '{repo_name}'")
         except requests.HTTPError as e:
-            print(f"Error fetching tags for {repo_name}: {str(e)}")
+            print(f"[{idx}/{total_repos}] Error fetching tags for {repo_name}: {str(e)}")
             continue
         backup_data[repo_name] = tags
     return backup_data
@@ -173,16 +242,16 @@ def load_backup_data(args):
     with open(args.input_json, "r") as f:
         return json.load(f)
 
-def get_backup_data(args, headers):
+def get_backup_data(args, auth):
     if args.input_json:
         print(f"Loading backup data from {args.input_json} ...")
         return load_backup_data(args)
     else:
-        return fetch_backup_data(args, headers)
+        return fetch_backup_data(args, auth)
 
 def main():
     args = parse_args()
-    
+
     # Parse the preservation rules into a dictionary.
     # Expected format: prefix:number (e.g., prod:10 staging:5)
     preserve_rules = {}
@@ -193,28 +262,35 @@ def main():
         else:
             preserve_rules[rule] = None
 
-    headers = {"Authorization": f"Bearer {args.token}"}
-    
+    # Create auth object only if we're not using input-json
+    # (input-json mode doesn't require API authentication)
+    auth = None if args.input_json else DockerHubAuth(args.username, args.pat)
+
     with open("cleanup_report.csv", "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Repository", "Tag", "Last Pulled", "Last Updated", "Status", "Reason"])
-        
-        backup_data = get_backup_data(args, headers)
-        
+
+        backup_data = get_backup_data(args, auth)
+
         # Filter backup_data if specific repositories are provided via --repos
         if args.repos:
             backup_data = {repo: tags for repo, tags in backup_data.items() if repo in args.repos}
             if not backup_data:
                 print("No matching repositories found in backup data for the provided --repos argument.")
                 return
-        
+
         # Process each repository's backup data; use skip-repos only when --repos is not provided.
+        total_repos = len(backup_data)
+        processed_count = 0
         for repo_name, tags in backup_data.items():
             if not args.repos and any(repo_name.startswith(prefix) for prefix in args.skip_repos):
                 print(f"Skipping repository: {repo_name}")
                 continue
-            process_repository(repo_name, tags, args, preserve_rules, headers, writer)
-        
+            processed_count += 1
+            print(f"\n[{processed_count}/{total_repos}] Processing repository '{repo_name}' ({len(tags)} tags)...")
+            process_repository(repo_name, tags, args, preserve_rules, auth, writer)
+            print(f"[{processed_count}/{total_repos}] Completed '{repo_name}'")
+
         # Save backup data if it was fetched from the API.
         if not args.input_json:
             with open(args.backup_file, "w") as f:
